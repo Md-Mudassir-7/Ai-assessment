@@ -4,7 +4,8 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const app = express();
 const path = require('path');
-const upload = multer({ dest: './uploads/' });
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 const fs = require('fs');
 const firebase = require('firebase-admin');
 const cors = require('cors');
@@ -98,11 +99,40 @@ app.post('/api/login', (req, res) => {
 
 // Create a route to handle image uploads
 app.post('/api/upload-image', upload.single('image'), (req, res) => {
+  const uploadsDir = path.join(__dirname, 'uploads');
+
+  // Get list of files in uploads directory
+  const files = fs.readdirSync(uploadsDir);
+
+  // Filter files that match 'captured_image_*.png' pattern
+  const capturedImages = files.filter(file => /^captured_image_\d+\.png$/.test(file));
+
+  // Extract numbers from filenames and find the maximum
+  let maxNumber = 0;
+  capturedImages.forEach(file => {
+    const match = file.match(/^captured_image_(\d+)\.png$/);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      if (num > maxNumber) {
+        maxNumber = num;
+      }
+    }
+  });
+
+  // Determine the next number
+  const nextNumber = maxNumber + 1;
+  const fileName = `captured_image_${nextNumber}.png`;
+  const filePath = path.join(uploadsDir, fileName);
+
   const imageBuffer = req.file.buffer;
-  const imageName = req.file.originalname;
-  const filePath = `./uploads/${imageName}`;
-  fs.writeFileSync(filePath, imageBuffer);
-  res.status(201).send(`Image uploaded successfully!`);
+  try {
+    fs.writeFileSync(filePath, imageBuffer);
+    console.log('File written successfully:', fileName);
+    res.status(201).send(`Image uploaded successfully as ${fileName}!`);
+  } catch (error) {
+    console.error('Error writing file:', error);
+    res.status(500).send('Error uploading image');
+  }
 });
 
 // API endpoint to load questions
@@ -206,6 +236,6 @@ app.get('/api/candidates', (req, res) => {
     res.json(candidates);
 });
 
-app.listen(3000, () => {
-  console.log('Server started on port 3000');
+app.listen(3001, () => {
+  console.log('Server started on port 3001');
 });

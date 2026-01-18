@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useAuth } from './context';
 
 const WebcamComponent = () => {
+  const { currentUser } = useAuth();
   const webcamRef = useRef(null);
   const [image, setImage] = useState(null);
 
@@ -13,10 +15,9 @@ const WebcamComponent = () => {
 
       script.onload = () => {
         window.Webcam.set({
-          width: 450,
+          width: 400,
           height: 300,
-          image_format: 'jpeg',
-          jpeg_quality: 90,
+          image_format: 'png',
         });
 
         window.Webcam.attach(webcamRef.current);
@@ -36,16 +37,21 @@ const WebcamComponent = () => {
   const capture = () => {
     window.Webcam.snap((data_uri) => {
       setImage(data_uri);
+      // Save image immediately upon capture
       uploadImage(data_uri);
     });
   };
 
   const uploadImage = (data_uri) => {
+    const username = currentUser?.displayName || 'default_user';
+    console.log('Uploading image for username:', username);
+    console.log('Current user:', currentUser);
     const formData = new FormData();
     const blob = dataURItoBlob(data_uri);
-    formData.append('image', blob, 'captured_image.jpg');
+    formData.append('image', blob, 'captured_image.png');
+    formData.append('username', username);
 
-    fetch('/api/upload-image', {
+    fetch('http://localhost:3001/api/upload-image', {
       method: 'POST',
       body: formData,
     })

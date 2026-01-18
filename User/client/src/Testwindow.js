@@ -2,9 +2,11 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import './Testwindow.css';
 import Aiproctor from "./Ai_proctor"; // Assuming Aiproctor is a component you have
+import { useAuth } from './context';
 
 export default function TestWindow() {
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
   const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState({});
@@ -127,7 +129,35 @@ export default function TestWindow() {
   const nextQuestion = () => {
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
+      // Trigger image capture and save when moving to next question
+      if (window.Webcam) {
+        window.Webcam.snap((data_uri) => {
+          const formData = new FormData();
+          const blob = dataURItoBlob(data_uri);
+          formData.append('image', blob, 'captured_image.png');
+          formData.append('username', currentUser?.displayName || 'default_user');
+
+          fetch('/api/upload-image', {
+            method: 'POST',
+            body: formData,
+          })
+            .then((response) => response.json())
+            .then((data) => console.log('Image uploaded:', data))
+            .catch((error) => console.error('Error uploading image:', error));
+        });
+      }
     }
+  };
+
+  const dataURItoBlob = (dataURI) => {
+    const byteString = atob(dataURI.split(',')[1]);
+    const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i);
+    }
+    return new Blob([ab], { type: mimeString });
   };
 
   const previousQuestion = () => {

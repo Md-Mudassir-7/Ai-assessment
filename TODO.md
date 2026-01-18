@@ -1,5 +1,4 @@
-# TODO: Make All Inputs Consistent in Signin.js
+# TODO for Fixing Photo Upload Issue
 
-- [ ] Wrap all inputs in div with position: 'relative'
-- [ ] Add paddingRight: '40px' to all inputs
-- [ ] Test the fixes
+- [x] Remove the "proxy" line from User/client/package.json
+- [x] Update the fetch URL in User/client/src/WebCamComponent.js from '/api/upload-image' to 'http://localhost:3001/api/upload-image'
