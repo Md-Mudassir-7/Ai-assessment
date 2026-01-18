@@ -1,6 +1,6 @@
 import React, { useContext, useState, useEffect } from "react";
 import { auth } from "./firebase"; // Import your Firebase configuration
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { GoogleAuthProvider } from "firebase/auth";
 import { getFirestore, doc, setDoc } from "firebase/firestore"; // Import Firestore functions
 
@@ -23,7 +23,7 @@ export function AuthProvider({ children }) {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setCurrentUser (user);
-        setUserLoggedIn(false); // Set to false until user explicitly signs in
+        setUserLoggedIn(true); // Set to true when user is authenticated
       } else {
         setCurrentUser (null);
         setUserLoggedIn(false); // Ensure userLoggedIn is false when there's no user
@@ -40,7 +40,7 @@ export function AuthProvider({ children }) {
       setUserLoggedIn(true); // Set userLoggedIn to true only after successful sign-in
     } catch (error) {
       console.error("Error signing in:", error);
-      throw new Error(error.message || 'Failed to sign in. Please check your credentials and try again.');
+      throw error; // Throw the original Firebase error to preserve error.code
     } finally {
       setLoading(false);
     }
@@ -55,11 +55,27 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const handleSignUp = async (email, password, username) => {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      // Set the display name
+      await updateProfile(userCredential.user, {
+        displayName: username
+      });
+      // Optionally, send email verification
+      // await sendEmailVerification(auth.currentUser);
+    } catch (error) {
+      console.error("Error signing up:", error);
+      throw new Error(error.message || 'Failed to create account. Please try again.');
+    }
+  };
+
   const value = {
     userLoggedIn,
     currentUser ,
     handleSignIn,
     handleSignOut,
+    handleSignUp,
   };
 
   return (

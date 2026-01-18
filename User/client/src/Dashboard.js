@@ -1,8 +1,10 @@
 import React from "react";
 import './Dashboard.css';
+import { useAuth } from './context';
 
 export default function Dashboard(){
-    const candidatename="Mudassir";
+    const { currentUser } = useAuth();
+    const candidatename = currentUser?.displayName || "User";
     return(
         <div className="Dashboard">
             <img src={require("./m_image.png")} className="Dash-image"></img>
